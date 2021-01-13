@@ -38,7 +38,8 @@ RemoveFile $tmp
 CreateFile $tmp
 
 $fileNameWithoutExt = $zipFileName.Substring(0, $zipFileName.LastIndexOf('.'))
-$file = "$($workingDir)\$($fileNameWithoutExt).txt" # C:/.../InternetSales_new.txt
+$fileName = "$($fileNameWithoutExt).txt"
+$file = "$($workingDir)\$($fileName)" # C:/.../InternetSales_new.txt
 $fileOld = "$($workingDir)\InternetSales_old.txt"
 
 # download file
@@ -67,6 +68,18 @@ ClearContent $tmp
 DivideColumn $file $tmp
 CopyContent $tmp $file
 ClearContent $tmp
+
+# create table CUSTOMERS_290915
+$myconnection = CreateConnection
+CreateTable $myconnection
+
+# insert values
+InsertValues $myconnection $file
+
+# move input file
+$processedDir = "$($workingDir)\PROCESSED"
+CreateDir $processedDir
+MoveFile $file "$processedDir\$($TIMESTAMP)_$($fileName)"
 
 Write-Host 1
 LogMessage "Exit"

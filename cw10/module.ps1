@@ -19,7 +19,7 @@ Function LogMessage
 Function ExitWithError
 {
     LogMessage "Failure"
-    # Write-Error "Failure"
+    Write-Warning "Failure"
     Exit
 }
 
@@ -30,7 +30,18 @@ Function CreateFile
 
     if (-Not (Test-Path $file)) 
     {
-        New-Item -Path $file -ItemType file 
+        New-Item -Path $file -ItemType file 2>&1 | Out-Null
+    }
+}
+
+
+Function CreateDir
+{
+    Param ([string]$path)
+
+    if (-Not (Test-Path $path)) 
+    {
+        New-Item -Path $path -ItemType directory 2>&1 | Out-Null
     }
 }
 
@@ -42,6 +53,17 @@ Function ClearContent
     if (Test-Path $file) 
     {
         Clear-Content -Path $file
+    }
+}
+
+
+Function MoveFile
+{
+    Param ([string]$source, [string]$dest)
+
+    if (Test-Path $source) 
+    {
+        Move-Item -Path $source -Destination $dest
     }
 }
 
@@ -182,4 +204,76 @@ Function DivideColumn
         $line = $arrayListOfColumns -join $separator
         $line
     } | Set-Content $outFile
+}
+
+
+Function CreateConnection
+{
+    [void][system.reflection.Assembly]::LoadWithPartialName("MySql.Data")
+
+    $dbusername = "root"
+    $dbpassword = "Lukasz010!"
+    $dbname = "basic"
+    [void][System.Reflection.Assembly]::LoadFrom("C:\Program Files (x86)\MySQL\Connector NET 8.0\Assemblies\v4.5.2\MySql.Data.dll")
+    $myconnection = New-Object MySql.Data.MySqlClient.MySqlConnection
+    $myconnection.ConnectionString = "server=localhost;user id=$($dbusername);password=$($dbpassword);database=$($dbname);pooling=false"
+    return $myconnection
+}
+
+
+Function CreateTable
+{
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection)
+
+    $myconnection.Open()
+
+    $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
+    $mycommand.Connection = $myconnection
+    $mycommand.CommandText = "create table if not exists CUSTOMERS_290915 (ProductKey int, CurrencyAlternateKey varchar(3), FIRST_NAME varchar(255), LAST_NAME varchar(255), OrderDateKey varchar(255), OrderQuantity int, UnitPrice float, SecretCode varchar(255));"
+    $myreader = $mycommand.ExecuteNonQuery()
+    
+    $myconnection.Close()
+}
+
+
+Function InsertValues
+{
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, [string]$file)
+
+    $myconnection.Open()
+
+    $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
+    $mycommand.Connection = $myconnection
+
+    $mytransaction=$myconnection.BeginTransaction()
+
+    $separator = "|"
+    $dbSeparator = ","
+    $isHeader = $true
+
+    Get-Content $file | %{
+        if ($isHeader -eq $false) {
+            $columnsInLine = $_.Split($separator)
+            for ($i = 0; $i -lt $columnsInLine.Count ; $i++) {
+                $columnsInLine[$i] = $columnsInLine[$i].Replace(",", ".")   # replace all ',' with '.' in values
+                if ($columnsInLine[$i].length -eq 0) {                      # replace all '' with 'NULL' in values
+                    $columnsInLine[$i] = "NULL"
+                }
+                $columnsInLine[$i] = "'$($columnsInLine[$i])'"
+            }
+            $values = $columnsInLine -join $dbSeparator
+
+            $mycommand.CommandText = "insert into CUSTOMERS_290915 values ($($values))"
+            $myreader = $mycommand.ExecuteNonQuery()
+        }
+        $isHeader = $false
+    }
+
+    try {
+        $mytransaction.Commit()
+    } catch {
+        $mytransaction.Rollback()
+    } finally {
+        $myconnection.Close()
+    }
 }
