@@ -277,3 +277,20 @@ Function InsertValues
         $myconnection.Close()
     }
 }
+
+
+Function SendEmail
+{
+    $username = "username"
+    $password = "password"
+    $message = New-Object Net.Mail.MailMessage;
+    $message.From = "lukasz010420@gmail.com";
+    $message.To.Add("lukasz.kuk97@gmail.com");
+    $message.Subject = "CUSTOMERS LOAD - $($TIMESTAMP)";
+    $message.Body = "body text here...";
+
+    $smtp = New-Object Net.Mail.SmtpClient("smtp.gmail.com", "587");
+    $smtp.EnableSSL = $true;
+    $smtp.Credentials = New-Object System.Net.NetworkCredential($username, $password);
+    $smtp.send($message);
+}

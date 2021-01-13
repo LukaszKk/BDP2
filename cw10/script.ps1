@@ -78,8 +78,14 @@ InsertValues $myconnection $file
 
 # move input file
 $processedDir = "$($workingDir)\PROCESSED"
+$movedFile = "$processedDir\$($TIMESTAMP)_$($fileName)"
 CreateDir $processedDir
-MoveFile $file "$processedDir\$($TIMESTAMP)_$($fileName)"
+RemoveFile $movedFile
+MoveFile $file $movedFile
+
+# send email
+# TODO: end
+SendEmail
 
 Write-Host 1
 LogMessage "Exit"
