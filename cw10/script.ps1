@@ -27,21 +27,25 @@ $TIMESTAMP =  Get-Date -format "MM-dd-yyyy"
 
 $faultyFile = "InternetSales_new.bad_$($TIMESTAMP)"
 RemoveFile $faultyFile
+CreateFile $faultyFile
 
-$Logfile = "$($workingDir)\logs.log"
-RemoveFile $LogFile
+$logfile = "$($workingDir)\logs.log"
+RemoveFile $logFile
+CreateFile $logFile
 
 $tmp = "$($workingDir)\tmp.txt"
 RemoveFile $tmp
+CreateFile $tmp
 
 $fileNameWithoutExt = $zipFileName.Substring(0, $zipFileName.LastIndexOf('.'))
 $file = "$($workingDir)\$($fileNameWithoutExt).txt" # C:/.../InternetSales_new.txt
+$fileOld = "$($workingDir)\InternetSales_old.txt"
 
 # download file
 Invoke-WebRequest -Uri $uri -OutFile $zipFile
 
 # unzip
-Unzip $7ZipPath $zipFile $workingDir $zipPassword
+Unzip $zipFile $workingDir $zipPassword
 
 # check if file exists after unzip
 CheckFileExists $file
@@ -49,18 +53,20 @@ CheckFileExists $file
 # discard empty lines
 DiscardEmptyLines $file
 
-# leave only unique lines
-UniqueLinesFilter $file $faultyFile $tmp
+# only unique lines and
+# only rows with the same columns count as in the header
+# OrderQuantity max value 100
+# compare content with old file
+# SecretCode is empty
+# CustomerName contains ','
+FilterFile $file $fileOld $faultyFile $tmp
 CopyContent $tmp $file
-RemoveFile $tmp
+ClearContent $tmp
 
-# rows with proper columns count
-ColumnCountFilter $file $faultyFile $tmp
+# divide into 2 columns
+DivideColumn $file $tmp
 CopyContent $tmp $file
-RemoveFile $tmp
+ClearContent $tmp
 
-# 
-
-
-Write-Host $columnsCount
+Write-Host 1
 LogMessage "Exit"
