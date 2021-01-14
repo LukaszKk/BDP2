@@ -50,6 +50,7 @@ Unzip $zipFile $workingDir $zipPassword
 
 # check if file exists after unzip
 CheckFileExists $file
+$inputLinesCount = GetFileLinesCount $file
 
 # discard empty lines
 DiscardEmptyLines $file
@@ -60,21 +61,25 @@ DiscardEmptyLines $file
 # compare content with old file
 # SecretCode is empty
 # CustomerName contains ','
-FilterFile $file $fileOld $faultyFile $tmp
+$duplicatesCount = FilterFile $file $fileOld $faultyFile $tmp
 CopyContent $tmp $file
 ClearContent $tmp
 
 # divide into 2 columns
 DivideColumn $file $tmp
 CopyContent $tmp $file
-ClearContent $tmp
+RemoveFile $tmp
 
 # create table CUSTOMERS_290915
 $myconnection = CreateConnection
 CreateTable $myconnection
 
 # insert values
-InsertValues $myconnection $file
+$dbLoadedCount = InsertValues $myconnection $file
+
+# count lines
+$filteredLinesCount = GetFileLinesCount $file
+$rejectedLinesCount = GetFileLinesCount $faultyFile
 
 # move input file
 $processedDir = "$($workingDir)\PROCESSED"
@@ -84,8 +89,23 @@ RemoveFile $movedFile
 MoveFile $file $movedFile
 
 # send email
-# TODO: end
-SendEmail
+$subject = "CUSTOMERS LOAD - $($TIMESTAMP)"
+$body = @"
+    Input file lines count: $($inputLinesCount)
+    File lines count after filtration: $($filteredLinesCount)
+    Duplicates in input file: $($duplicatesCount)
+    Rejected lines count: $($rejectedLinesCount)
+    Loaded to db count: $($dbLoadedCount)
+"@
+LogMessage "Message subject: $subject"
+LogMessage @"
+Message content:
+$($body)
+"@
+SendEmail $subject $body
 
-Write-Host 1
+# update SecretCode
+$randomString = -join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_})
+UpdateColumnValue $myconnection "SecretCode" $randomString
+
 LogMessage "Exit"

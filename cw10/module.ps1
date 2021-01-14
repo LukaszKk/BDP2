@@ -10,9 +10,15 @@
 
 Function LogMessage
 {
-   Param ([string]$logstring)
+    Param ([string]$logstring, [string]$level="")
 
-   Add-content $logfile -value $logstring
+    $lvl = "INFO"
+    if ($level -ne "") {
+        $lvl = $level
+    }
+
+    $time = Get-Date -format "yyyy-MM-dd hh:mm:ss"
+    Add-content $logfile -value "$($time) $($lvl): $($logstring)"
 }
 
 
@@ -109,6 +115,14 @@ Function Unzip
 }
 
 
+Function GetFileLinesCount
+{
+    Param ([string]$file)
+
+    return (Get-Content $file).length
+}
+
+
 Function DiscardEmptyLines
 {
     Param ([string]$file)
@@ -139,6 +153,7 @@ Function FilterFile
     $customerIndex = $columns.IndexOf($customerColumnName)
 
     $oldContent = Get-Content $oldFile
+    $duplicatesCount = 0
 
     Get-Content $inFile | %{
         $columnsInLine = $_.Split($separator)
@@ -146,7 +161,11 @@ Function FilterFile
         $orderColumnValue = $columnsInLine[$orderIndex]
         $secretColumnValue = $columnsInLine[$secretIndex]
         $customerColumnValue = $columnsInLine[$customerIndex]
-
+        
+        if ($set.Contains($_)) {                                            # count duplicates. Ugly solution but works
+            $duplicatesCount = $duplicatesCount + 1
+        }
+        
         if (($header -eq $_) -Or (                                          # check if column is header
             !$set.Contains($_) -And                                         # check duplicate
             $columnsCount -eq $columnsCountInLine -And                      # check if columns count is ok
@@ -169,6 +188,8 @@ Function FilterFile
             Add-content $faultyFile -value $line
         }
     } | Set-Content $outFile
+
+    return $duplicatesCount
 }
 
 
@@ -251,6 +272,8 @@ Function InsertValues
     $dbSeparator = ","
     $isHeader = $true
 
+    $count = 0
+
     Get-Content $file | %{
         if ($isHeader -eq $false) {
             $columnsInLine = $_.Split($separator)
@@ -265,6 +288,7 @@ Function InsertValues
 
             $mycommand.CommandText = "insert into CUSTOMERS_290915 values ($($values))"
             $myreader = $mycommand.ExecuteNonQuery()
+            $count = $count + 1
         }
         $isHeader = $false
     }
@@ -273,24 +297,59 @@ Function InsertValues
         $mytransaction.Commit()
     } catch {
         $mytransaction.Rollback()
+        $count = 0
+        LogMessage "DB error: Nothing inserted" "ERROR"
     } finally {
         $myconnection.Close()
     }
+
+    return $count
 }
 
 
 Function SendEmail
 {
+    Param ([string]$subject, [string]$body)
+
     $username = "username"
     $password = "password"
-    $message = New-Object Net.Mail.MailMessage;
-    $message.From = "lukasz010420@gmail.com";
-    $message.To.Add("lukasz.kuk97@gmail.com");
-    $message.Subject = "CUSTOMERS LOAD - $($TIMESTAMP)";
-    $message.Body = "body text here...";
+    $message = New-Object Net.Mail.MailMessage
+    $message.From = "mail.from@gmail.com"
+    $message.To.Add("mail.to@gmail.com")
+    $message.Subject = $subject
+    $message.Body = $body
 
-    $smtp = New-Object Net.Mail.SmtpClient("smtp.gmail.com", "587");
-    $smtp.EnableSSL = $true;
-    $smtp.Credentials = New-Object System.Net.NetworkCredential($username, $password);
-    $smtp.send($message);
+    $smtp = New-Object Net.Mail.SmtpClient("smtp.gmail.com", "587")
+    $smtp.EnableSSL = $true
+    $smtp.Credentials = New-Object System.Net.NetworkCredential($username, $password)
+    try {
+        $smtp.send($message)
+    } catch {
+        LogMessage "Message send error" "ERROR"
+    }
+}
+
+
+Function UpdateColumnValue
+{
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, $column, $value)
+
+    $myconnection.Open()
+
+    $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
+    $mycommand.Connection = $myconnection
+
+    $mytransaction=$myconnection.BeginTransaction()
+
+    $mycommand.CommandText = "update CUSTOMERS_290915 set $($column) = '$($value)'"
+    $myreader = $mycommand.ExecuteNonQuery()
+
+    try {
+        $mytransaction.Commit()
+    } catch {
+        $mytransaction.Rollback()
+        LogMessage "DB error: Nothing updated" "ERROR"
+    } finally {
+        $myconnection.Close()
+    }
 }
