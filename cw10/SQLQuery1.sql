@@ -1,0 +1,1 @@
+update CUSTOMERS_290915 set SecretCode=LPAD(LEFT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TO_BASE64(UNHEX(MD5(RAND()))), '/', ''), '+', ''), '=', ''), 'l', ''), '1', ''), '0', ''), 10), 10, 0);

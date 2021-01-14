@@ -338,7 +338,7 @@ Function SendEmail
 
 Function UpdateColumnValue
 {
-    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, [string]$column, [string]$value)
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, [string]$column)
 
     $myconnection.Open()
 
@@ -347,7 +347,7 @@ Function UpdateColumnValue
 
     $mytransaction=$myconnection.BeginTransaction()
 
-    $mycommand.CommandText = "update CUSTOMERS_$($authorNr) set $($column) = '$($value)'"
+    $mycommand.CommandText = "update CUSTOMERS_$($authorNr) set $($column)=LPAD(LEFT(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(REPLACE(TO_BASE64(UNHEX(MD5(RAND()))), '/', ''), '+', ''), '=', ''), 'l', ''), '1', ''), '0', ''), 10), 10, 0);"
     $myreader = $mycommand.ExecuteNonQuery()
 
     try {

@@ -1,0 +1,2 @@
+bcp AdventureWorksDW2019.dbo.CUSTOMERS_290915 format nul -c -T -t, -f C:\Projects\Uczelnia\BDP2\BDP2\cw10\fmtFile.fmt
+bcp AdventureWorksDW2019.dbo.CUSTOMERS_290915 in table.csv -f C:\Projects\Uczelnia\BDP2\BDP2\cw10\fmtFile.fmt -T

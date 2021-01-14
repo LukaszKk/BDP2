@@ -181,8 +181,7 @@ $step = "Updating SecretCode column value"
 Write-Host $step
 try {
     # update SecretCode
-    $randomString = -join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_})
-    UpdateColumnValue $myconnection "SecretCode" $randomString
+    UpdateColumnValue $myconnection "SecretCode"
 } catch {
     LogMessage "$($step) - Failed" "ERROR"
     ExitWithError
