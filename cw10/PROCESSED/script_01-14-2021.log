@@ -1,31 +1,31 @@
-2021-01-14 08:55:06 INFO: Downloading - SUCCESS
-2021-01-14 08:55:06 INFO: Unzipping - SUCCESS
-2021-01-14 08:55:08 INFO: File filtration - SUCCESS
-2021-01-14 08:55:08 INFO: Table creation - SUCCESS
-2021-01-14 08:55:11 INFO: Inserting values - SUCCESS
-2021-01-14 08:55:11 INFO: File moving and renaming - SUCCESS
-2021-01-14 08:55:11 INFO: Message subject: CUSTOMERS LOAD - 01-14-2021
-2021-01-14 08:55:11 INFO: Message content:
+2021-01-14 10:40:35 INFO: Downloading - SUCCESS
+2021-01-14 10:40:35 INFO: Unzipping - SUCCESS
+2021-01-14 10:40:37 INFO: File filtration - SUCCESS
+2021-01-14 10:40:37 INFO: Table creation - SUCCESS
+2021-01-14 10:40:41 INFO: Inserting values - SUCCESS
+2021-01-14 10:40:41 INFO: File moving and renaming - SUCCESS
+2021-01-14 10:40:41 INFO: Message subject: CUSTOMERS LOAD - 01-14-2021
+2021-01-14 10:40:41 INFO: Message content:
     
-        Input file lines count: 10009
-        File lines count after filtration: 9967
+        Input file lines count: 10008
+        File lines count after filtration: 9966
         Duplicates in input file: 5
-        Rejected lines count: 42
+        Rejected lines count: 41
         Loaded to db count: 9966
     
-2021-01-14 08:55:12 ERROR: Message send error
-2021-01-14 08:55:12 ERROR: Sending email about customers load - Failed
-2021-01-14 08:55:12 INFO: Sending email about customers load - SUCCESS
-2021-01-14 08:55:12 INFO: Updating SecretCode column value - SUCCESS
-2021-01-14 08:55:12 INFO: Exporting table to CSV - SUCCESS
-2021-01-14 08:55:13 INFO: Compressing file - SUCCESS
-2021-01-14 08:55:13 INFO: Message subject: Archived file - 01-14-2021
-2021-01-14 08:55:13 INFO: Message content:
+2021-01-14 10:40:41 ERROR: Message send error
+2021-01-14 10:40:41 ERROR: Sending email about customers load - Failed 								# inconsistency with the line below because of email mockup
+2021-01-14 10:40:41 INFO: Sending email about customers load - SUCCESS
+2021-01-14 10:40:41 INFO: Updating SecretCode column value - SUCCESS
+2021-01-14 10:40:42 INFO: Exporting table to CSV - SUCCESS
+2021-01-14 10:40:42 INFO: Compressing file - SUCCESS
+2021-01-14 10:40:42 INFO: Message subject: Archived file - 01-14-2021
+2021-01-14 10:40:42 INFO: Message content:
     
-        Creation time: 01/14/2021 20:12:01
-        Lines Count: 9967
+        Creation time: 01/14/2021 22:30:36
+        Lines Count: 9966
     
-2021-01-14 08:55:13 ERROR: Message send error
-2021-01-14 08:55:13 ERROR: Sending email with compressed file as attachment - Failed
-2021-01-14 08:55:13 INFO: Sending email with compressed file as attachment - SUCCESS
-2021-01-14 08:55:13 INFO: Shuting down
+2021-01-14 10:40:43 ERROR: Message send error
+2021-01-14 10:40:43 ERROR: Sending email with compressed file as attachment - Failed				# inconsistency with the line below because of email mockup
+2021-01-14 10:40:43 INFO: Sending email with compressed file as attachment - SUCCESS
+2021-01-14 10:40:43 INFO: Shuting down

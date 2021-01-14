@@ -1,11 +1,14 @@
-#===================================#
-#            Changelog              #
-#                                   #
-#                                   #
-# Author: 290915                    #
-# Created: 01/13/2021               #
-#                                   #
-#===================================#
+#=============================================================================#
+#                                 Changelog                                   #
+#                                                                             #
+#                                Module file                                  #
+#                                                                             #
+#                                                                             #
+# Author: 290915                                                              #
+# Created: 01/13/2021                                                         #
+# Version: 1.0.0                                                              #
+#                                                                             #
+#=============================================================================#
 
 
 Function LogMessage
@@ -117,7 +120,7 @@ Function GetFileLinesCount
 {
     Param ([string]$file)
 
-    return (Get-Content $file).length
+    return (Get-Content $file).length - 1
 }
 
 
@@ -228,14 +231,12 @@ Function DivideColumn
 
 Function CreateConnection
 {
-    [void][system.reflection.Assembly]::LoadWithPartialName("MySql.Data")
+    $decodedPassword = [System.Text.Encoding]::Unicode.GetString([System.Convert]::FromBase64String($dbpassword))
 
-    $dbusername = "root"
-    $dbpassword = "Lukasz010!"
-    $dbname = "basic"
+    [void][system.reflection.Assembly]::LoadWithPartialName("MySql.Data")
     [void][System.Reflection.Assembly]::LoadFrom("C:\Program Files (x86)\MySQL\Connector NET 8.0\Assemblies\v4.5.2\MySql.Data.dll")
     $myconnection = New-Object MySql.Data.MySqlClient.MySqlConnection
-    $myconnection.ConnectionString = "server=localhost;user id=$($dbusername);password=$($dbpassword);database=$($dbname);pooling=false"
+    $myconnection.ConnectionString = "server=localhost;user id=$($dbusername);password=$($decodedPassword);database=$($dbname);pooling=false"
     return $myconnection
 }
 
@@ -248,7 +249,7 @@ Function CreateTable
 
     $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
     $mycommand.Connection = $myconnection
-    $mycommand.CommandText = "create table if not exists CUSTOMERS_290915 (ProductKey int, CurrencyAlternateKey varchar(3), FIRST_NAME varchar(255), LAST_NAME varchar(255), OrderDateKey varchar(255), OrderQuantity int, UnitPrice float, SecretCode varchar(255));"
+    $mycommand.CommandText = "create table if not exists CUSTOMERS_$($authorNr) (ProductKey int, CurrencyAlternateKey varchar(3), FIRST_NAME varchar(255), LAST_NAME varchar(255), OrderDateKey varchar(255), OrderQuantity int, UnitPrice float, SecretCode varchar(255));"
     $myreader = $mycommand.ExecuteNonQuery()
     
     $myconnection.Close()
@@ -284,7 +285,7 @@ Function InsertValues
             }
             $values = $columnsInLine -join $dbSeparator
 
-            $mycommand.CommandText = "insert into CUSTOMERS_290915 values ($($values))"
+            $mycommand.CommandText = "insert into CUSTOMERS_$($authorNr) values ($($values))"
             $myreader = $mycommand.ExecuteNonQuery()
             $count = $count + 1
         }
@@ -346,7 +347,7 @@ Function UpdateColumnValue
 
     $mytransaction=$myconnection.BeginTransaction()
 
-    $mycommand.CommandText = "update CUSTOMERS_290915 set $($column) = '$($value)'"
+    $mycommand.CommandText = "update CUSTOMERS_$($authorNr) set $($column) = '$($value)'"
     $myreader = $mycommand.ExecuteNonQuery()
 
     try {
@@ -379,7 +380,7 @@ Function ExportToCSV
     $mycommand.CommandText = "
     SELECT 'ProductKey', 'CurrencyAlternateKey', 'FIRST_NAME', 'LAST_NAME', 'OrderDateKey', 'OrderQuantity', 'UnitPrice', 'SecretCode'
     UNION ALL
-    SELECT * FROM CUSTOMERS_290915 
+    SELECT * FROM CUSTOMERS_$($authorNr) 
     INTO OUTFILE '$($file)'
     FIELDS ENCLOSED BY '' 
     TERMINATED BY '$($separator)' 
