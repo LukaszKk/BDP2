@@ -3,7 +3,7 @@
 #                                   #
 #                                   #
 # Author: 290915                    #
-# Date: 01/13/2021                  #
+# Created: 01/13/2021               #
 #                                   #
 #===================================#
 
@@ -91,9 +91,7 @@ Function CheckFileExists
 
     if (-Not (Test-Path $file))
     {
-        LogMessage "File has not been found: $($file)"
-        Write-Warning "File has not been found: $($file)"
-        ExitWithError
+        throw [System.IO.FileNotFoundException] "$($file) not found."
     }
 }
 
@@ -299,6 +297,7 @@ Function InsertValues
         $mytransaction.Rollback()
         $count = 0
         LogMessage "DB error: Nothing inserted" "ERROR"
+        throw "db error"
     } finally {
         $myconnection.Close()
     }
@@ -331,6 +330,7 @@ Function SendEmail
         $smtp.send($message)
     } catch {
         LogMessage "Message send error" "ERROR"
+        throw "Message send error"
     }
 }
 
@@ -354,6 +354,7 @@ Function UpdateColumnValue
     } catch {
         $mytransaction.Rollback()
         LogMessage "DB error: Nothing updated" "ERROR"
+        throw "db error"
     } finally {
         $myconnection.Close()
     }
@@ -392,6 +393,7 @@ Function ExportToCSV
     } catch {
         $mytransaction.Rollback()
         LogMessage "DB error: Nothing exported" "ERROR"
+        throw "db error"
     } finally {
         $myconnection.Close()
     }

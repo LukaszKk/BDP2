@@ -1,0 +1,31 @@
+2021-01-14 08:55:06 INFO: Downloading - SUCCESS
+2021-01-14 08:55:06 INFO: Unzipping - SUCCESS
+2021-01-14 08:55:08 INFO: File filtration - SUCCESS
+2021-01-14 08:55:08 INFO: Table creation - SUCCESS
+2021-01-14 08:55:11 INFO: Inserting values - SUCCESS
+2021-01-14 08:55:11 INFO: File moving and renaming - SUCCESS
+2021-01-14 08:55:11 INFO: Message subject: CUSTOMERS LOAD - 01-14-2021
+2021-01-14 08:55:11 INFO: Message content:
+    
+        Input file lines count: 10009
+        File lines count after filtration: 9967
+        Duplicates in input file: 5
+        Rejected lines count: 42
+        Loaded to db count: 9966
+    
+2021-01-14 08:55:12 ERROR: Message send error
+2021-01-14 08:55:12 ERROR: Sending email about customers load - Failed
+2021-01-14 08:55:12 INFO: Sending email about customers load - SUCCESS
+2021-01-14 08:55:12 INFO: Updating SecretCode column value - SUCCESS
+2021-01-14 08:55:12 INFO: Exporting table to CSV - SUCCESS
+2021-01-14 08:55:13 INFO: Compressing file - SUCCESS
+2021-01-14 08:55:13 INFO: Message subject: Archived file - 01-14-2021
+2021-01-14 08:55:13 INFO: Message content:
+    
+        Creation time: 01/14/2021 20:12:01
+        Lines Count: 9967
+    
+2021-01-14 08:55:13 ERROR: Message send error
+2021-01-14 08:55:13 ERROR: Sending email with compressed file as attachment - Failed
+2021-01-14 08:55:13 INFO: Sending email with compressed file as attachment - SUCCESS
+2021-01-14 08:55:13 INFO: Shuting down

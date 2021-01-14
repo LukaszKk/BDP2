@@ -5,7 +5,7 @@
 # The purpose of this script is to                                #
 #                                   #
 # Author: 290915                    #
-# Date: 01/13/2021                  #
+# Created: 01/13/2021               #
 #                                   #
 #===================================#
 
@@ -29,7 +29,12 @@ $faultyFile = "InternetSales_new.bad_$($TIMESTAMP)"
 RemoveFile $faultyFile
 CreateFile $faultyFile
 
-$logfile = "$($workingDir)\logs.log"
+$processedDir = "$($workingDir)\PROCESSED"
+CreateDir $processedDir
+
+$currentScriptName = $MyInvocation.MyCommand.Name
+
+$logfile = "$($processedDir)\$($currentScriptName.Substring(0, $currentScriptName.LastIndexOf('.')))_$($TIMESTAMP).log"
 RemoveFile $logFile
 CreateFile $logFile
 
@@ -42,98 +47,178 @@ $fileName = "$($fileNameWithoutExt).txt"
 $file = "$($workingDir)\$($fileName)" # C:/.../InternetSales_new.txt
 $fileOld = "$($workingDir)\InternetSales_old.txt"
 
-# download file
-Invoke-WebRequest -Uri $uri -OutFile $zipFile
+$step = "Downloading"
+Write-Host $step
+try {
+    # download file
+    Invoke-WebRequest -Uri $uri -OutFile $zipFile
+} catch {
+    LogMessage "$($step) - FAILED" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# unzip
-Unzip $zipFile $workingDir $zipPassword
+$step = "Unzipping"
+Write-Host $step
+try {
+    # unzip
+    Unzip $zipFile $workingDir $zipPassword
 
-# check if file exists after unzip
-CheckFileExists $file
-$inputLinesCount = GetFileLinesCount $file
+    # check if file exists after unzip
+    CheckFileExists $file
+    $inputLinesCount = GetFileLinesCount $file
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# discard empty lines
-DiscardEmptyLines $file
+$step = "File filtration"
+Write-Host $step
+try {
+    # discard empty lines
+    DiscardEmptyLines $file
 
-# only unique lines and
-# only rows with the same columns count as in the header
-# OrderQuantity max value 100
-# compare content with old file
-# SecretCode is empty
-# CustomerName contains ','
-$duplicatesCount = FilterFile $file $fileOld $faultyFile $tmp
-CopyContent $tmp $file
-ClearContent $tmp
+    # only unique lines and
+    # only rows with the same columns count as in the header
+    # OrderQuantity max value 100
+    # compare content with old file
+    # SecretCode is empty
+    # CustomerName contains ','
+    $duplicatesCount = FilterFile $file $fileOld $faultyFile $tmp
+    CopyContent $tmp $file
+    ClearContent $tmp
 
-# divide into 2 columns
-DivideColumn $file $tmp
-CopyContent $tmp $file
-RemoveFile $tmp
+    # divide into 2 columns
+    DivideColumn $file $tmp
+    CopyContent $tmp $file
+    RemoveFile $tmp
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# create table CUSTOMERS_290915
-$myconnection = CreateConnection
-CreateTable $myconnection
+$step = "Table creation"
+Write-Host $step
+try {
+    # create table CUSTOMERS_290915
+    $myconnection = CreateConnection
+    CreateTable $myconnection
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# insert values
-$dbLoadedCount = InsertValues $myconnection $file $tmp
+$step = "Inserting values"
+Write-Host $step
+try {
+    # insert values
+    $dbLoadedCount = InsertValues $myconnection $file $tmp
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
 # count lines
 $filteredLinesCount = GetFileLinesCount $file
 $rejectedLinesCount = GetFileLinesCount $faultyFile
 
-# move input file
-$processedDir = "$($workingDir)\PROCESSED"
-$movedFile = "$processedDir\$($TIMESTAMP)_$($fileName)"
-CreateDir $processedDir
-RemoveFile $movedFile
-MoveFile $file $movedFile
+$step = "File moving and renaming"
+Write-Host $step
+try {
+    # move input file
+    $movedFile = "$processedDir\$($TIMESTAMP)_$($fileName)"
+    RemoveFile $movedFile
+    MoveFile $file $movedFile
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# send email
-$subject = "CUSTOMERS LOAD - $($TIMESTAMP)"
-$body = @"
-    Input file lines count: $($inputLinesCount)
-    File lines count after filtration: $($filteredLinesCount)
-    Duplicates in input file: $($duplicatesCount)
-    Rejected lines count: $($rejectedLinesCount)
-    Loaded to db count: $($dbLoadedCount)
-"@
-LogMessage "Message subject: $subject"
-LogMessage @"
-Message content:
-$($body)
-"@
-SendEmail $subject $body
+$step = "Sending email about customers load"
+Write-Host $step
+try {
+    # send email
+    $subject = "CUSTOMERS LOAD - $($TIMESTAMP)"
+    $body = "
+        Input file lines count: $($inputLinesCount)
+        File lines count after filtration: $($filteredLinesCount)
+        Duplicates in input file: $($duplicatesCount)
+        Rejected lines count: $($rejectedLinesCount)
+        Loaded to db count: $($dbLoadedCount)
+    "
+    LogMessage "Message subject: $subject"
+    LogMessage "Message content:
+    $($body)"
+    SendEmail $subject $body
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    # ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# update SecretCode
-$randomString = -join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_})
-UpdateColumnValue $myconnection "SecretCode" $randomString
+$step = "Updating SecretCode column value"
+Write-Host $step
+try {
+    # update SecretCode
+    $randomString = -join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_})
+    UpdateColumnValue $myconnection "SecretCode" $randomString
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# export table to csv
-$csvFile = "$($workingDir)\table.csv"
-RemoveFile $csvFile
-ExportToCSV $myconnection $csvFile
+$step = "Exporting table to CSV"
+Write-Host $step
+try {
+    # export table to csv
+    $csvFile = "$($workingDir)\table.csv"
+    RemoveFile $csvFile
+    ExportToCSV $myconnection $csvFile
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# compress file
-$csvFileZip = "$($workingDir)\table.zip"
-RemoveFile $csvFileZip
-CompressFile $csvFile $csvFileZip
+$step = "Compressing file"
+Write-Host $step
+try {
+    # compress file
+    $csvFileZip = "$($workingDir)\table.zip"
+    RemoveFile $csvFileZip
+    CompressFile $csvFile $csvFileZip
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
-# send email with attachment
-$csvLinesCount = GetFileLinesCount $csvFile
-$creationTime = GetCreationTime $csvFileZip
-$subject = "Archived file - $($TIMESTAMP)"
-$body = @"
-    Creation time: $($creationTime)
-    Lines Count: $($csvLinesCount)
-"@
-LogMessage "Message subject: $subject"
-LogMessage @"
-Message content:
-$($body)
-"@
-SendEmail $subject $body $csvFileZip
-
-# 
+$step = "Sending email with compressed file as attachment"
+Write-Host $step
+try {
+    # send email with attachment
+    $csvLinesCount = GetFileLinesCount $csvFile
+    $creationTime = GetCreationTime $csvFileZip
+    $subject = "Archived file - $($TIMESTAMP)"
+    $body = "
+        Creation time: $($creationTime)
+        Lines Count: $($csvLinesCount)
+    "
+    LogMessage "Message subject: $subject"
+    LogMessage "Message content:
+    $($body)"
+    SendEmail $subject $body $csvFileZip
+} catch {
+    LogMessage "$($step) - Failed" "ERROR"
+    # ExitWithError
+}
+LogMessage "$($step) - SUCCESS"
 
 # exit
-LogMessage "Exit"
+LogMessage "Shuting down"
