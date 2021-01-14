@@ -75,7 +75,7 @@ $myconnection = CreateConnection
 CreateTable $myconnection
 
 # insert values
-$dbLoadedCount = InsertValues $myconnection $file
+$dbLoadedCount = InsertValues $myconnection $file $tmp
 
 # count lines
 $filteredLinesCount = GetFileLinesCount $file
@@ -108,4 +108,32 @@ SendEmail $subject $body
 $randomString = -join ((65..90) + (97..122) | Get-Random -Count 10 | % {[char]$_})
 UpdateColumnValue $myconnection "SecretCode" $randomString
 
+# export table to csv
+$csvFile = "$($workingDir)\table.csv"
+RemoveFile $csvFile
+ExportToCSV $myconnection $csvFile
+
+# compress file
+$csvFileZip = "$($workingDir)\table.zip"
+RemoveFile $csvFileZip
+CompressFile $csvFile $csvFileZip
+
+# send email with attachment
+$csvLinesCount = GetFileLinesCount $csvFile
+$creationTime = GetCreationTime $csvFileZip
+$subject = "Archived file - $($TIMESTAMP)"
+$body = @"
+    Creation time: $($creationTime)
+    Lines Count: $($csvLinesCount)
+"@
+LogMessage "Message subject: $subject"
+LogMessage @"
+Message content:
+$($body)
+"@
+SendEmail $subject $body $csvFileZip
+
+# 
+
+# exit
 LogMessage "Exit"

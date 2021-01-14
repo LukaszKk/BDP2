@@ -266,7 +266,7 @@ Function InsertValues
     $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
     $mycommand.Connection = $myconnection
 
-    $mytransaction=$myconnection.BeginTransaction()
+    $mytransaction = $myconnection.BeginTransaction()
 
     $separator = "|"
     $dbSeparator = ","
@@ -309,7 +309,7 @@ Function InsertValues
 
 Function SendEmail
 {
-    Param ([string]$subject, [string]$body)
+    Param ([string]$subject, [string]$body, [string]$attachmentpath="")
 
     $username = "username"
     $password = "password"
@@ -318,6 +318,11 @@ Function SendEmail
     $message.To.Add("mail.to@gmail.com")
     $message.Subject = $subject
     $message.Body = $body
+
+    if ($attachmentpath -ne "") {
+        $attachment = New-Object Net.Mail.Attachment($attachmentpath);
+        $message.Attachments.Add($attachment)
+    }
 
     $smtp = New-Object Net.Mail.SmtpClient("smtp.gmail.com", "587")
     $smtp.EnableSSL = $true
@@ -332,7 +337,7 @@ Function SendEmail
 
 Function UpdateColumnValue
 {
-    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, $column, $value)
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, [string]$column, [string]$value)
 
     $myconnection.Open()
 
@@ -352,4 +357,58 @@ Function UpdateColumnValue
     } finally {
         $myconnection.Close()
     }
+}
+
+
+Function ExportToCSV
+{
+    Param ([MySql.Data.MySqlClient.MySqlConnection]$myconnection, [string]$file)
+
+    $separator = ","
+
+    $myconnection.Open()
+
+    $mycommand = New-Object MySql.Data.MySqlClient.MySqlCommand
+    $mycommand.Connection = $myconnection
+
+    $mytransaction=$myconnection.BeginTransaction()
+
+    $file = $file.Replace("\","\\")
+    
+    $mycommand.CommandText = "
+    SELECT 'ProductKey', 'CurrencyAlternateKey', 'FIRST_NAME', 'LAST_NAME', 'OrderDateKey', 'OrderQuantity', 'UnitPrice', 'SecretCode'
+    UNION ALL
+    SELECT * FROM CUSTOMERS_290915 
+    INTO OUTFILE '$($file)'
+    FIELDS ENCLOSED BY '' 
+    TERMINATED BY '$($separator)' 
+    ESCAPED BY '' 
+    LINES TERMINATED BY '\r\n';
+    "
+    $myreader = $mycommand.ExecuteNonQuery()
+
+    try {
+        $mytransaction.Commit()
+    } catch {
+        $mytransaction.Rollback()
+        LogMessage "DB error: Nothing exported" "ERROR"
+    } finally {
+        $myconnection.Close()
+    }
+}
+
+
+Function CompressFile
+{
+    Param([string]$file, [string]$dest)
+
+    Compress-Archive -Path $file -CompressionLevel Fastest -DestinationPath $dest
+}
+
+
+Function GetCreationTime
+{
+    Param([string]$file)
+
+    return (Get-ChildItem $file).CreationTime
 }
